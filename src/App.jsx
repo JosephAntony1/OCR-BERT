@@ -3,8 +3,10 @@ import ImageUploader from './components/ImageUploader';
 
 function App() {
   return (
-    <main className="min-h-screen p-4 bg-gray-100">
-      <h1 className="text-2xl font-bold mb-4 text-center">OCR & BERT App</h1>
+    <main className="min-h-screen bg-gradient-to-br from-gray-100 to-gray-200 p-6">
+      <h1 className="text-3xl font-bold mb-8 text-center text-gray-800">
+        OCR + Text Embedding App
+      </h1>
       <ImageUploader />
     </main>
   );
