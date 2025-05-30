@@ -19,7 +19,6 @@ const firebaseConfig = {
 
 const huggingface_key = import.meta.env.VITE_HF_KEY;
 
-
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const hf = new HfInference(huggingface_key);
@@ -31,7 +30,7 @@ export default function ImageUploader() {
   const [embedding, setEmbedding] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [showEmbedding, setShowEmbedding] = useState(false);
+  const [showEmbedding, setShowEmbedding] = useState(true);
 
   const handleImageUpload = async (event) => {
     const file = event.target.files[0];
