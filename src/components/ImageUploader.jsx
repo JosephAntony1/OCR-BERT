@@ -139,7 +139,12 @@ export default function ImageUploader() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-white px-4">
       <div className="w-full max-w-2xl bg-white p-8 rounded-2xl shadow-lg space-y-6">
-        <h1 className="text-3xl font-bold text-center text-blue-700">OCR + BERT Visualizer</h1>
+        <div className="text-center">
+          <h1 className="text-3xl font-bold text-blue-700 mb-1">OCR + BERT Visualizer</h1>
+          <p className="text-gray-600 text-sm">
+            Upload or capture an image to extract text using Google Vision and explore text embeddings from Hugging Face models.
+          </p>
+        </div>
 
         <div className="text-center">
           <label className="inline-block cursor-pointer px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition">
