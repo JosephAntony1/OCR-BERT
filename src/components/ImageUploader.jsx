@@ -75,26 +75,40 @@ export default function ImageUploader() {
     setOcrText('');
     setEmbedding([]);
 
-    
-
     try {
-      const tesseractResult = await Tesseract.recognize(file, 'eng');
-      const rawText = tesseractResult.data.text;
-      const cleanText = rawText.replace(/\s+/g, ' ').trim();
-      setOcrText(cleanText || '(No text found)');
-      const result = await hf.featureExtraction({
-        model: selectedModel.id,
-        inputs: cleanText
-      });
+      // Read file as base64
+      const reader = new FileReader();
+      reader.onloadend = async () => {
+        const base64Image = reader.result.split(',')[1]; // remove data:image/... prefix
 
-      const emb = Array.isArray(result) ? result : [];
-      setEmbedding(emb);
+        // 🔁 Call your Cloud Function
+        const res = await fetch(' https://us-central1-biogenisis-ocr.cloudfunctions.net/analyzeImage', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ image: base64Image }),
+        });
 
-      await addDoc(collection(db, 'ocr_results'), {
-        text: cleanText,
-        embedding: emb,
-        timestamp: new Date()
-      });
+        const data = await res.json();
+        const cleanText = data.text?.trim() || '(No text found)';
+        setOcrText(cleanText);
+
+        // 🔁 Call Hugging Face embedding
+        const result = await hf.featureExtraction({
+          model: selectedModel.id,
+          inputs: cleanText,
+        });
+
+        const emb = Array.isArray(result) ? result : [];
+        setEmbedding(emb);
+
+        await addDoc(collection(db, 'ocr_results'), {
+          text: cleanText,
+          embedding: emb,
+          timestamp: new Date()
+        });
+      };
+
+      reader.readAsDataURL(file);
     } catch (err) {
       console.error(err);
       setError('Something went wrong while processing the image.');
@@ -102,6 +116,7 @@ export default function ImageUploader() {
 
     setLoading(false);
   };
+
 
   const chartData = {
     labels: embedding.map((_, i) => i),
