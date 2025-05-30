@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Tesseract from 'tesseract.js';
 import { initializeApp } from 'firebase/app';
 import { getFirestore, collection, addDoc } from 'firebase/firestore';
@@ -23,6 +23,10 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const hf = new HfInference(huggingface_key);
 
+const models = [
+  { label: "MiniLM (default)", id: "sentence-transformers/all-MiniLM-L6-v2" },
+  { label: "MPNet", id: "sentence-transformers/all-mpnet-base-v2" }
+];
 
 export default function ImageUploader() {
   const [image, setImage] = useState(null);
@@ -30,7 +34,36 @@ export default function ImageUploader() {
   const [embedding, setEmbedding] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [showEmbedding, setShowEmbedding] = useState(true);
+  const [selectedModel, setSelectedModel] = useState(models[0]); // default: MiniLM
+  useEffect(() => {
+    const regenerateEmbedding = async () => {
+      if (!ocrText || ocrText === '(No text found)') return;
+
+      setLoading(true);
+      setError('');
+      try {
+        const result = await hf.featureExtraction({
+          model: selectedModel.id,
+          inputs: ocrText
+        });
+        const emb = Array.isArray(result) ? result : [];
+        setEmbedding(emb);
+
+        await addDoc(collection(db, 'ocr_results'), {
+          text: ocrText,
+          embedding: emb,
+          model: selectedModel.id,
+          timestamp: new Date()
+        });
+      } catch (err) {
+        console.error(err);
+        setError('Failed to regenerate embedding.');
+      }
+      setLoading(false);
+    };
+
+    regenerateEmbedding();
+  }, [selectedModel]);
 
   const handleImageUpload = async (event) => {
     const file = event.target.files[0];
@@ -41,16 +74,16 @@ export default function ImageUploader() {
     setError('');
     setOcrText('');
     setEmbedding([]);
-    setShowEmbedding(false);
+
+    
 
     try {
       const tesseractResult = await Tesseract.recognize(file, 'eng');
       const rawText = tesseractResult.data.text;
       const cleanText = rawText.replace(/\s+/g, ' ').trim();
       setOcrText(cleanText || '(No text found)');
-
       const result = await hf.featureExtraction({
-        model: 'sentence-transformers/all-MiniLM-L6-v2',
+        model: selectedModel.id,
         inputs: cleanText
       });
 
@@ -104,8 +137,7 @@ export default function ImageUploader() {
             />
           </label>
         </div>
-
-        {image && (
+              {image && (
           <div className="text-center">
             <img src={image} alt="Uploaded" className="mx-auto rounded-lg max-h-64 shadow-md" />
           </div>
@@ -129,21 +161,33 @@ export default function ImageUploader() {
           </div>
         )}
 
+        <div className="text-center">
+          <label className="block mb-1 font-medium text-gray-700">Choose Embedding Model</label>
+          <select
+            value={selectedModel.id}
+            onChange={(e) => {
+              const model = models.find((m) => m.id === e.target.value);
+              setSelectedModel(model);
+            }}
+            className="px-4 py-2 border rounded-md bg-white shadow-sm text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            {models.map((model) => (
+              <option key={model.id} value={model.id}>
+                {model.label}
+              </option>
+            ))}
+          </select>
+        </div>
+
         {!loading && embedding.length > 0 && (
           <div>
-            <button
-              onClick={() => setShowEmbedding(!showEmbedding)}
-              className="block mx-auto mt-4 text-blue-600 hover:underline text-sm"
-            >
-              {showEmbedding ? 'Hide' : 'Show'} Embedding Chart
-            </button>
-
-            {showEmbedding && (
+            {(
               <div className="mt-4 bg-gray-50 p-4 rounded-lg shadow">
                 <Bar data={chartData} options={chartOptions} />
-                <p className="text-xs text-gray-500 mt-2 text-center">
-                  {embedding.length}-dimensional embedding from BERT (MiniLM)
-                </p>
+                  <p className="text-xs text-gray-500 mt-2 text-center">
+                    {embedding.length}-dimensional embedding from: <strong>{selectedModel.label}</strong>
+                  </p>
+
               </div>
             )}
           </div>
