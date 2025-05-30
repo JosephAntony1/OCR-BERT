@@ -142,8 +142,7 @@ export default function ImageUploader() {
         <div className="text-center">
           <h1 className="text-3xl font-bold text-blue-700 mb-1">OCR + BERT Visualizer</h1>
           <p className="text-gray-600 text-sm">
-            Upload or capture an image to extract text using Google Vision and explore text embeddings from Hugging Face models.
-          </p>
+"Upload or capture an image to extract text using Google Cloud Vision, then generate and visualize semantic embeddings using popular Hugging Face models. This tool is designed for exploring the intersection of OCR and NLP. Ideal for prototyping intelligent document processing, search indexing, or text similarity applications."          </p>
         </div>
 
         <div className="text-center">
